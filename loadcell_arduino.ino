@@ -1,5 +1,8 @@
 #include "HX711.h"
 
+// Download the HX711 library in the arduino library to get use the
+// load cell booster
+
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 2;
 const int LOADCELL_SCK_PIN = 3;
