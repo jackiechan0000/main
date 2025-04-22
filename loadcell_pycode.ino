@@ -1,29 +1,42 @@
-import serial
-import time
+#include "HX711.h"
 
-# --- CONFIGURATION ---
-port = 'COM5'
-baud = 115200
-timeout = 0.01
-filename = 'loadcell_log.csv'
-# ----------------------
+// HX711 circuit wiring
+const int LOADCELL_DOUT_PIN = 2;
+const int LOADCELL_SCK_PIN = 3;
 
-ser = serial.Serial(port, baud, timeout=0.01)
-time.sleep(2)  # Allows Arduino time to reset
-start_time = time.time()
+HX711 scale;
 
-with open(filename, 'w') as f:
-    print("Logging started... Press Ctrl+C to stop.")
-    f.write("Timestamp,Weight\n")
-    try:
-        while True:
-            line = ser.readline().decode('utf-8').strip()
-            if "Weight:" in line:
-                weight = line.split(":")[1].replace("grams", "").strip()
-                elapsed = time.time() - start_time
-                timestamp = f"{elapsed:.4f}"  # Seconds with milliseconds
-                f.write(f"{timestamp},{weight}\n")
-                print(f"{timestamp} s : {weight} grams")
-    except KeyboardInterrupt:
-        print("Logging stopped.")
-ser.close()
+void setup() {
+  Serial.begin(115200);
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+
+  Serial.println("Initializing the scale...");
+  
+  // Wait for scale to be ready
+  while (!scale.is_ready()) {
+    Serial.println("Waiting for the HX711...");
+    delay(500);
+  }
+
+  // Tare to zero the scale (remove any load)
+  scale.tare();
+  Serial.println("Scale tared.");
+
+  // Set your own calibration factor here
+  // current_factor * (actual weight / a bunch of factors)
+  scale.set_scale(2280.0*(4980/1800)/5*.97);
+}
+
+void loop() {
+  // Only print if scale is ready
+  if (scale.is_ready()) {
+    float weight = scale.get_units(1); // Average of 5 readings
+    Serial.print("Weight: ");
+    Serial.print(weight, 3);  // Show two decimal places
+    Serial.println(" grams");
+  } else {
+    Serial.println("HX711 not found.");
+  }
+
+  delay(0.001);
+}
