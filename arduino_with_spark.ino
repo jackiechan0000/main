@@ -131,15 +131,15 @@ void loop() {
         if (c == '$') digitalWrite(v4, LOW);
 
         if (c == '9') {
-            long start_time = millis();
-            long endtime = start_time;
-            void while((endtime-start_time) <= 300) {
-                digitalWrite(coil, HIGH);
-                delay(16.667)
-                digitalWrite(coil, LOW);
-                delay(1)
-
-                endtime = millis();
+            void loop() {
+                long startTime = millis();
+                void while(millis() - startTime <= 300) {
+                    digitalWrite(coil, HIGH);
+                    delay(16.667)
+                    digitalWrite(coil, LOW);
+                    delay(2)
+                }
+                Serial.println("0.3 seconds passed");
             }
             
         }
