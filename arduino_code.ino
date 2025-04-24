@@ -11,6 +11,8 @@ int v4 = 21;
 const int LOADCELL_DOUT_PIN = 2;
 const int LOADCELL_SCK_PIN = 3;
 
+
+HX711 scale;
 float weight = scale.get_units(1);
 
 // Pin used to trigger a coil
@@ -142,7 +144,7 @@ void loop() {
         if (c == '4') digitalWrite(v4, HIGH);
         if (c == '$') digitalWrite(v4, LOW);
 
-        if(c == '%') ReadLoadCell();
+        if(c == '10') ReadLoadCell();
 
         if (c == '9') {
             unsigned long startMicros = micros();
