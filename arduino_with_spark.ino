@@ -70,38 +70,33 @@ void setup() {
   // Calibrate voltage-based sensors (pt3 and pt5)
     for (int i = 0; i < 100; i++) {
         double d1 = analogRead(OPD01);
-        double d2 = analogRead(EPD01);
+        double d2 = analogRead(OPD02);
+        double d3 = analogRead(FPD01);
         float Vread1 = d1 * (5.0 / 1024.0);
         float Vread2 = d2 * (5.0 / 1024.0);
+        float Vread3 = d3 * (5.0 / 1024.0);
         float pressure1 = Pmax * ((Vread1 - V0) / (Vmax - V0));
         float pressure2 = Pmax * ((Vread2 - V0) / (Vmax - V0));
+        float pressure3 = Pmax * ((Vread3 - V0) / (Vmax - V0));
         sum1 += pressure1;
         sum2 += pressure2;
+        sum3 += pressure3;
     }
 
    // Compute ambient offsets to convert gauge to absolute pressure
     offset1 = 14.7 - (sum1 / 100);
     offset2 = 14.7 - (sum2 / 100);
+    offset3 = 14.7 - (sum3 / 100);
 
    // Calibrate current-based sensors (pt1, pt2, pt4)
     for (int i = 0; i < 100; i++) {
-        float d3 = analogRead(OPD02);
-        float d4 = analogRead(FPD01);
-        float d5 = analogRead(pt4);
-        float Vread3 = d3 * (5.0 / 1024.0);
+        float d3 = analogRead(EPD01);
         float Vread4 = d4 * (5.0 / 1024.0);
-        float Vread5 = d5 * (5.0 / 1024.0);
-        float pressure3 = (Pmax1k * (Vread3 - (I0 * R))) / (R * (Imax - I0));
         float pressure4 = (Pmax1k * (Vread4 - (I0 * R))) / (R * (Imax - I0));
-        float pressure5 = (Pmax1k * (Vread5 - (I0 * R))) / (R * (Imax - I0));
-        sum3 += pressure3;
         sum4 += pressure4;
-        sum5 += pressure5;
     }
 
-    offset3 = 14.7 - (sum3 / 100);
     offset4 = 14.7 - (sum4 / 100);
-    offset5 = 14.7 - (sum5 / 100);
 
    //This probably should be changed to 115200 but then the pi
    //should also be changed
@@ -117,7 +112,7 @@ void loop() {
   {
         //reads 1 character from pi
         char c = Serial.read();
-        delay(1); // slight pause for command stability
+        delay(0.1); // slight pause for command stability
         //Serial.print('Arduino recieved command'); // echo received command
 
         // Manual valve controls via serial commands
@@ -131,17 +126,26 @@ void loop() {
         if (c == '$') digitalWrite(v4, LOW);
 
         if (c == '9') {
-            void loop() {
-                long startTime = millis();
-                void while(millis() - startTime <= 300) {
-                    digitalWrite(coil, HIGH);
-                    delay(16.667)
-                    digitalWrite(coil, LOW);
-                    delay(2)
-                }
-                Serial.println("0.3 seconds passed");
+            unsigned long startMicros = micros();
+            int count = 0;
+            const unsigned long cycleTime = 16667;  // 60 Hz period in microseconds
+
+            while (micros() - startMicros <= 300000) {  // 300 ms = 300,000 us
+                unsigned long cycleStart = micros();
+
+                digitalWrite(coil, HIGH);
+                delayMicroseconds(15000);  // ON for 15 ms
+                digitalWrite(coil, LOW);
+                delayMicroseconds(1667);   // OFF for ~1.667 ms
+
+                count++;
+
+                // Optional precise wait until next full 16.667 ms
+                while (micros() - cycleStart < cycleTime);  // Wait remainder of the cycle
             }
-            
+
+            Serial.print("0.3 seconds passed and sparked ");
+            Serial.println(count);
         }
 
         // Read data from valvues
@@ -215,24 +219,24 @@ void dry_test() {
 
 // Read pressure from OPD (pt1)
 float ReadOPD02() {
-    pres_sum3 = 0;
+    pres_sum2 = 0;
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(OPD02) * (5.0 / 1024.0);
-        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0));
-        pres_sum3 += pressure;
+        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + offset2;
+        pres_sum2 += pressure;
     }
-    return pres_sum3 / pres_samples;
+    return pres_sum2 / pres_samples;
 }
 float ReadOPD01() {
-    pres_sum3 = 0;
+    pres_sum1 = 0;
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(OPD01) * (5.0 / 1024.0);
-        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0));
-        pres_sum3 += pressure;
+        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + offset1;
+        pres_sum1 += pressure;
     }
-    return pres_sum3 / pres_samples;
+    return pres_sum1 / pres_samples;
 }
 
 
@@ -242,7 +246,7 @@ float ReadFPD01() {
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(FPD01) * (5.0 / 1024.0);
-        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0));
+        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + offset3;
         pres_sum3 += pressure;
     }
     return pres_sum3 / pres_samples;
@@ -250,14 +254,14 @@ float ReadFPD01() {
 
 // Read pressure from EPD (pt5)
 float ReadEPD01() {
-    pres_sum2 = 0;
+    pres_sum4 = 0;
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(EPD01) * (5.0 / 1024.0);
-        float pressure = Pmax * ((Vread - V0) / (Vmax - V0));
-        pres_sum2 += pressure;
+        float pressure = Pmax * ((Vread - V0) / (Vmax - V0)) + offset4;
+        pres_sum4 += pressure;
     }
-    return pres_sum2 / pres_samples;
+    return pres_sum4 / pres_samples;
 }
 
 // ------------------- VALVE CONTROL -------------------
