@@ -4,6 +4,15 @@ int v2 = 6;
 int v3 = 14;
 int v4 = 21;
 
+//load cell
+#include "HX711.h"
+
+// HX711 circuit wiring
+const int LOADCELL_DOUT_PIN = 2;
+const int LOADCELL_SCK_PIN = 3;
+
+float weight = scale.get_units(1);
+
 // Pin used to trigger a coil
 int coil = 4; 
 
@@ -102,11 +111,19 @@ void setup() {
    //should also be changed
     Serial.begin(9600);
 
+    scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+    // Tare to zero the scale (remove any load)
+    scale.tare();
+    Serial.println("Scale tared.");
+    // Set your own calibration factor here
+    // current_factor * (actual weight / a bunch of factors)
+    scale.set_scale(2280.0*(4980/1800)/5*.97);
+
 }
 
 void loop() {
 
-
+  
   //checks for avaialable data from pi
   if (Serial.available()) 
   {
@@ -124,6 +141,8 @@ void loop() {
         if (c == '#') digitalWrite(v3, LOW);
         if (c == '4') digitalWrite(v4, HIGH);
         if (c == '$') digitalWrite(v4, LOW);
+
+        if(c == '%') ReadLoadCell();
 
         if (c == '9') {
             unsigned long startMicros = micros();
@@ -228,6 +247,17 @@ float ReadOPD02() {
     }
     return pres_sum2 / pres_samples;
 }
+
+float ReadLoadCell() {
+    weight = scale.get_units(1); // Average of 1 readings
+    Serial.print("Weight: ");
+    Serial.print(weight, 3);  // Show three decimal places
+    Serial.println(" grams");
+    delay(0.001);
+
+    return weight;
+}
+
 float ReadOPD01() {
     pres_sum1 = 0;
     for (int i = 0; i < pres_samples; i++) {
