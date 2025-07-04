@@ -5,7 +5,7 @@ int FV02 = 6;
 int NV02 = 7;
 
 //spark
-s1 = 8;
+int s1 = 8;
 
 //load cell
 #include "HX711.h"
