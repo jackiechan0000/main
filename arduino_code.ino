@@ -133,14 +133,14 @@ void loop() {
         //Serial.print('Arduino recieved command'); 
         // echo received command
         // Manual valve controls via serial commands
-        if (c == '1') digitalWriteFast(v1, HIGH);
-        if (c == '!') digitalWriteFast(v1, LOW);
-        if (c == '2') digitalWriteFast(v2, HIGH);
-        if (c == '@') digitalWriteFast(v2, LOW);
-        if (c == '3') digitalWriteFast(v3, HIGH);
-        if (c == '#') digitalWriteFast(v3, LOW);
-        if (c == '4') digitalWriteFast(v4, HIGH);
-        if (c == '$') digitalWriteFast(v4, LOW);
+        if (c == '1') digitalWriteFast(OV03, HIGH);
+        if (c == '!') digitalWriteFast(OV03, LOW);
+        if (c == '2') digitalWriteFast(FV03, HIGH);
+        if (c == '@') digitalWriteFast(FV03, LOW);
+        if (c == '3') digitalWriteFast(FV02, HIGH);
+        if (c == '#') digitalWriteFast(FV02, LOW);
+        if (c == '4') digitalWriteFast(NV02, HIGH);
+        if (c == '$') digitalWriteFast(NV02, LOW);
 
         //read loadcell
         if(c == '&') {
