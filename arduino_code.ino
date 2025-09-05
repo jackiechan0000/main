@@ -80,97 +80,126 @@ void setup() {
 
   // Calibrate voltage-based sensors (pt3 and pt5)
     for (int i = 0; i < 100; i++) {
-        double d1 = analogRead(OPD01);
-        double d2 = analogRead(OPD02);
-        double d3 = analogRead(FPD01);
-        float Vread1 = d1 * (5.0 / 1024.0);
-        float Vread2 = d2 * (5.0 / 1024.0);
-        float Vread3 = d3 * (5.0 / 1024.0);
-        float pressure1 = Pmax * ((Vread1 - V0) / (Vmax - V0));
-        float pressure2 = Pmax * ((Vread2 - V0) / (Vmax - V0));
-        float pressure3 = Pmax * ((Vread3 - V0) / (Vmax - V0));
-        sum1 += pressure1;
-        sum2 += pressure2;
-        sum3 += pressure3;
+      double d1 = analogRead(EPD01);
+      double d2 = analogRead(FPD02);
+      float Vread1 = d1 * (5.0 / 1024.0);
+      float Vread2 = d2 * (5.0 / 1024.0);
+      float pressure1 = Pmax * ((Vread1 - V0) / (Vmax - V0));
+      float pressure2 = Pmax * ((Vread2 - V0) / (Vmax - V0));
+      sum1 += pressure1;
+      sum2 += pressure2;
     }
 
-   // Compute ambient offsets to convert gauge to absolute pressure
+    // Compute ambient offsets to convert gauge to absolute pressure
     offset1 = 14.7 - (sum1 / 100);
     offset2 = 14.7 - (sum2 / 100);
-    offset3 = 14.7 - (sum3 / 100);
 
-   // Calibrate current-based sensors (pt1, pt2, pt4)
+  // Calibrate current-based sensors (pt1, pt2, pt4)
     for (int i = 0; i < 100; i++) {
-        float d4 = analogRead(EPD01);
-        float d5 = analogRead(FPD02);
-        float Vread4 = d4 * (5.0 / 1024.0);
-        float Vread5 = d5 * (5.0 / 1024.0);
-        float pressure4 = (Pmax1k * (Vread4 - (I0 * R))) / (R * (Imax - I0));
-        float pressure5 = (Pmax1k * (Vread5 - (I0 * R))) / (R * (Imax - I0));
-        sum4 += pressure4;
-        sum5 += pressure5;
+      float d3 = analogRead(OPD01);
+      float d4 = analogRead(OPD02);
+      float d5 = analogRead(FPD01);
+      float Vread4 = d3 * (5.0 / 1024.0);
+      float Vread4 = d4 * (5.0 / 1024.0);
+      float Vread5 = d5 * (5.0 / 1024.0);
+      float pressure3 = (Pmax1k * (Vread3 - (I0 * R))) / (R * (Imax - I0));
+      float pressure4 = (Pmax1k * (Vread4 - (I0 * R))) / (R * (Imax - I0));
+      float pressure5 = (Pmax1k * (Vread5 - (I0 * R))) / (R * (Imax - I0));
+      sum3 += pressure3;
+      sum4 += pressure4;
+      sum5 += pressure5;
     }
 
+    offset3 = 14.7 - (sum3 / 100);
     offset4 = 14.7 - (sum4 / 100);
     offset5 = 14.7 - (sum5 / 100);
 
-    //have the pi match this
-    Serial.begin(115200);
+  //have the pi match this
+  Serial.begin(115200);
 
-    //loadcell initialization
-    scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-    scale.tare();
-    scale.set_scale(2280.0*(4980/1800)/5*.97); // calibration factor
+  //loadcell initialization
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  scale.tare();
+  scale.set_scale(2280.0*(4980/1800)/5*.97); // calibration factor
+
 }
 
+bool firstTime = true;
+
+// ------------------- MAIN ------------------------
 void loop() {
+  //Valve Testing
+  if(firstTime){
+    //on
+    digitalWriteFast(OV03, HIGH);
+    delay(500);
+    digitalWriteFast(FV03, HIGH);
+    delay(500);
+    digitalWriteFast(FV02, HIGH);
+    delay(500);
+    digitalWriteFast(NV02, HIGH);
+    delay(500);
+    //off
+    digitalWriteFast(OV03, LOW);
+    delay(500);
+    digitalWriteFast(FV03, LOW);
+    delay(500);
+    digitalWriteFast(FV02, LOW);
+    delay(500);
+    digitalWriteFast(NV02, LOW);
+    delay(500);
+
+    firstTime = false;
+  }
+
   //checks for avaialable data from pi
   if (Serial.available()) 
   {
-        //reads 1 character from pi
-        char c = Serial.read();
-        delay(1); // slight pause for command stability
-        //Serial.print('Arduino recieved command'); 
-        // echo received command
-        // Manual valve controls via serial commands
-        if (c == '1') digitalWriteFast(OV03, HIGH);
-        if (c == '!') digitalWriteFast(OV03, LOW);
-        if (c == '2') digitalWriteFast(FV03, HIGH);
-        if (c == '@') digitalWriteFast(FV03, LOW);
-        if (c == '3') digitalWriteFast(FV02, HIGH);
-        if (c == '#') digitalWriteFast(FV02, LOW);
-        if (c == '4') digitalWriteFast(NV02, HIGH);
-        if (c == '$') digitalWriteFast(NV02, LOW);
+    //reads 1 character from pi
+    char c = Serial.read();
+    delay(1); // slight pause for command stability
+    //Serial.print('Arduino recieved command'); // echo received command
 
-        //read loadcell
-        if(c == '&') {
-            weight = ReadLoadCell();
-            Serial.println(weight);
-        }
-        // Read data from valvues
-        if (c == '5') {
-            float pressure = ReadOPD01();
-            Serial.println(pressure);  // Send value back to Pi
-        }
-        if (c == '6') {
-            float pressure = ReadOPD02();
-            Serial.println(pressure);
-        }
-        if (c == '7') {
-            float pressure = ReadEPD01();
-            Serial.println(pressure);
-        }
-        if (c == '8') {
-            float pressure = ReadFPD01();
-            Serial.println(pressure);
-        }
-        if (c == 'A'){
-            float pressure = ReadFPD02();
-            Serial.println(pressure);
-        }
-   } 
+    // Manual valve controls via serial commands
+    if (c == '1') digitalWriteFast(v1, HIGH);
+    if (c == '!') digitalWriteFast(v1, LOW);
+    if (c == '2') digitalWriteFast(v2, HIGH);
+    if (c == '@') digitalWriteFast(v2, LOW);
+    if (c == '3') digitalWriteFast(v3, HIGH);
+    if (c == '#') digitalWriteFast(v3, LOW);
+    if (c == '4') digitalWriteFast(v4, HIGH);
+    if (c == '$') digitalWriteFast(v4, LOW);
+
+    if(c == '&') {
+      weight = ReadLoadCell();
+      Serial.println(weight);
+    }
+
+    // Read data from valvues
+    if (c == '5') {
+      float pressure = ReadOPD01();
+      Serial.println(pressure);  // Send value back to Pi
+    }
+    if (c == '6') {
+      float pressure = ReadOPD02();
+      Serial.println(pressure);
+    }
+    if (c == '7') {
+      float pressure = ReadEPD01();
+      Serial.println(pressure);
+    }
+    if (c == '8') {
+      float pressure = ReadFPD01();
+      Serial.println(pressure);
+    }
+    if (c == 'A'){
+      float pressure = ReadFPD02();
+      Serial.println(pressure);
+    }
+  }
+  
 }
-// ------------------- TEST SEQUENCES -------------------
+
 // Load Cell Function
 float ReadLoadCell() {
     weight = scale.get_units(1); // Read 1 sample
@@ -251,8 +280,8 @@ void FV_02_OPEN()  { digitalWriteFast(FV02, HIGH); }
 void FV_02_CLOSE() { digitalWriteFast(FV02, LOW); }
 
 // ------------------- SPARK -------------------
-void spark_open() { digitalWriteFast(s1, HIGH); }
-void spark_close() { digitalWriteFast(s1, LOW); }
+//void spark_open() { digitalWriteFast(s1, HIGH); }
+//void spark_close() { digitalWriteFast(s1, LOW); }
 
 // ------------------- ABORT SEQUENCE -------------------
 void BLP_Abort() {
