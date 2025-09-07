@@ -1,0 +1,71 @@
+// Define digital output pins for solenoids valves
+int OV03 = 4;
+int FV03 = 5;
+int FV02 = 6;
+int NV02 = 7;
+
+
+//load cell
+#include "HX711.h"
+#include "digitalWriteFast.h"
+
+// Analog input pins for pressure transducers
+int FPD01 = A0;
+int OPD01 = A1;
+int OPD02 = A2;
+int EPD01 = A3;
+int FPD02 = A4;
+
+
+unsigned long startTime;
+
+
+void setup() {
+  // Set valve and coil pins as outputs
+    pinMode(OV03, OUTPUT);
+    pinMode(FV03, OUTPUT);
+    pinMode(FV02, OUTPUT);
+    pinMode(NV02, OUTPUT);
+
+  // Allow sensors to stabilize
+    delay(3000);
+
+
+  //have the pi match this
+  Serial.begin(115200);
+
+
+}
+
+bool firstTime = true;
+
+// ------------------- MAIN ------------------------
+void loop() {
+  //Valve Testing
+  if(firstTime){
+    //on
+    digitalWriteFast(OV03, HIGH);
+    delay(20000);
+    digitalWriteFast(OV03, LOW);
+   // digitalWriteFast(FV03, HIGH);
+   // delay(500);
+    //digitalWriteFast(FV02, HIGH);
+   // delay(500);
+   // digitalWriteFast(NV02, HIGH);
+   // delay(500);
+    //off
+    //digitalWriteFast(OV03, LOW);
+   // delay(500);
+    //digitalWriteFast(FV03, LOW);
+    //delay(500);
+    //digitalWriteFast(FV02, LOW);
+    //delay(500);
+    //digitalWriteFast(NV02, LOW);
+    //delay(500);
+
+    firstTime = false;
+  }
+
+
+  
+}
