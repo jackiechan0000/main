@@ -5,7 +5,7 @@ int FV02 = 6;
 int NV02 = 7;
 
 //spark
-int s1 = 8;
+int s1 = 38;
 
 //load cell
 #include "HX711.h"
@@ -99,7 +99,7 @@ void setup() {
       float d3 = analogRead(OPD01);
       float d4 = analogRead(OPD02);
       float d5 = analogRead(FPD01);
-      float Vread4 = d3 * (5.0 / 1024.0);
+      float Vread3 = d3 * (5.0 / 1024.0);
       float Vread4 = d4 * (5.0 / 1024.0);
       float Vread5 = d5 * (5.0 / 1024.0);
       float pressure3 = (Pmax1k * (Vread3 - (I0 * R))) / (R * (Imax - I0));
@@ -161,14 +161,21 @@ void loop() {
     //Serial.print('Arduino recieved command'); // echo received command
 
     // Manual valve controls via serial commands
-    if (c == '1') digitalWriteFast(v1, HIGH);
-    if (c == '!') digitalWriteFast(v1, LOW);
-    if (c == '2') digitalWriteFast(v2, HIGH);
-    if (c == '@') digitalWriteFast(v2, LOW);
-    if (c == '3') digitalWriteFast(v3, HIGH);
-    if (c == '#') digitalWriteFast(v3, LOW);
-    if (c == '4') digitalWriteFast(v4, HIGH);
-    if (c == '$') digitalWriteFast(v4, LOW);
+    if (c == '1') digitalWriteFast(FV02, HIGH);
+    if (c == '!') digitalWriteFast(FV02, LOW);
+    if (c == '2') digitalWriteFast(FV03, HIGH);
+    if (c == '@') digitalWriteFast(FV03, LOW);
+    if (c == '3') digitalWriteFast(OV03, HIGH);
+    if (c == '#') digitalWriteFast(OV03, LOW);
+    if (c == '4') digitalWriteFast(NV02, HIGH);
+    if (c == '$') digitalWriteFast(NV02, LOW);
+
+    //spark
+    if (c == 'D') {
+      digitalWrite(s1, HIGH);
+      delay(100); // 1 second fire
+      digitalWrite(s1, LOW);
+    }
 
     if(c == '&') {
       weight = ReadLoadCell();
@@ -280,8 +287,8 @@ void FV_02_OPEN()  { digitalWriteFast(FV02, HIGH); }
 void FV_02_CLOSE() { digitalWriteFast(FV02, LOW); }
 
 // ------------------- SPARK -------------------
-//void spark_open() { digitalWriteFast(s1, HIGH); }
-//void spark_close() { digitalWriteFast(s1, LOW); }
+void spark_open() { digitalWriteFast(s1, HIGH); }
+void spark_close() { digitalWriteFast(s1, LOW); }
 
 // ------------------- ABORT SEQUENCE -------------------
 void BLP_Abort() {
