@@ -5,25 +5,25 @@ int FV02 = 6;
 int NV02 = 7;
 
 //spark
-int s1 = 38;
+int s1 = 3;
 
 //load cell
 #include "HX711.h"
 #include "digitalWriteFast.h"
 
 // HX711 circuit wiring
-const int LOADCELL_DOUT_PIN = 2;
-const int LOADCELL_SCK_PIN = 3;
+const int LOADCELL_DOUT_PIN = 10;
+const int LOADCELL_SCK_PIN = 9;
 
 HX711 scale;
 float weight = 0;
 
 // Analog input pins for pressure transducers
-int FPD01 = A0;
-int OPD01 = A1;
-int OPD02 = A2;
-int EPD01 = A3;
-int FPD02 = A4;
+int FPD01 = A10;
+int OPD01 = A12;
+int OPD02 = A11;
+int EPD01 = A9;
+int FPD02 = A8;
 
 // Raw analog values
 int d1, d2, d3, d4, d5;
@@ -67,6 +67,7 @@ void setup() {
     pinMode(FV03, OUTPUT);
     pinMode(FV02, OUTPUT);
     pinMode(NV02, OUTPUT);
+    pinMode(s1, OUTPUT);
 
   // Set pressure transducer pins as inputs
     pinMode(OPD02, INPUT);
@@ -131,23 +132,15 @@ void loop() {
   //Valve Testing
   if(firstTime){
     //on
-    digitalWriteFast(OV03, HIGH);
-    delay(500);
-    digitalWriteFast(FV03, HIGH);
     delay(500);
     digitalWriteFast(FV02, HIGH);
-    delay(500);
-    digitalWriteFast(NV02, HIGH);
-    delay(500);
-    //off
-    digitalWriteFast(OV03, LOW);
-    delay(500);
-    digitalWriteFast(FV03, LOW);
-    delay(500);
+    delay(250);
     digitalWriteFast(FV02, LOW);
-    delay(500);
-    digitalWriteFast(NV02, LOW);
-    delay(500);
+    delay(250);
+    digitalWriteFast(FV02, HIGH);
+    delay(250);
+    digitalWriteFast(FV02, LOW);
+    delay(250);
 
     firstTime = false;
   }
@@ -172,9 +165,19 @@ void loop() {
 
     //spark
     if (c == 'D') {
+      /*
       digitalWrite(s1, HIGH);
-      delay(100); // 1 second fire
+      delay(100); 
       digitalWrite(s1, LOW);
+      */
+      digitalWriteFast(FV03, HIGH);
+
+      delay(2300);
+
+      digitalWrite(s1, HIGH);
+      delay(800); // 1 second fire
+      digitalWrite(s1, LOW);
+
     }
 
     if(c == '&') {
@@ -221,7 +224,7 @@ float ReadOPD02() {
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(OPD02) * (5.0 / 1024.0);
-        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + 7.7;
+        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + 7.7 + 25;
         pres_sum2 += pressure;
     }
     return pres_sum2 / pres_samples;
@@ -232,7 +235,7 @@ float ReadOPD01() {
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(OPD01) * (5.0 / 1024.0);
-        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + 9.2;
+        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + 9.2 + 35 + 9.5;
         pres_sum1 += pressure;
     }
     return pres_sum1 / pres_samples;
@@ -244,7 +247,7 @@ float ReadFPD01() {
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(FPD01) * (5.0 / 1024.0);
-        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + 9.7;
+        float pressure = (Pmax1k * (Vread - (I0 * R))) / (R * (Imax - I0)) + 39.7 - 6.0;
         pres_sum3 += pressure;
     }
     return pres_sum3 / pres_samples;
@@ -256,7 +259,7 @@ float ReadEPD01() {
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(EPD01) * (5.0 / 1024.0);
-        float pressure = Pmax * ((Vread - V0) / (Vmax - V0));
+        float pressure = Pmax * ((Vread - V0) / (Vmax - V0)) + 15 + 3.5;
         pres_sum4 += pressure;
     }
     return pres_sum4 / pres_samples;
@@ -267,7 +270,7 @@ float ReadFPD02() {
     for (int i = 0; i < pres_samples; i++) {
         // 5 V / 1024 bits
         float Vread = analogRead(FPD02) * (5.0 / 1024.0);
-        float pressure = Pmax * ((Vread - V0) / (Vmax - V0));
+        float pressure = Pmax * ((Vread - V0) / (Vmax - V0)) + 15.0 + 47.5;
         pres_sum5 += pressure;
     }
     return pres_sum5 / pres_samples;
