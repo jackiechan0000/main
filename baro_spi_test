@@ -1,0 +1,59 @@
+#include <SPI.h>
+
+#define PIN_CS_BARO 10
+
+#define MS5611_CMD_RESET 0x1E
+#define MS5611_PROM_READ_BASE 0xA0  // A0, A2, A4... AE
+
+uint16_t readPROM(uint8_t addr) {
+  SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
+  digitalWrite(PIN_CS_BARO, LOW);
+
+  SPI.transfer(addr);
+  uint16_t msb = SPI.transfer(0x00);
+  uint16_t lsb = SPI.transfer(0x00);
+
+  digitalWrite(PIN_CS_BARO, HIGH);
+  SPI.endTransaction();
+
+  return (msb << 8) | lsb;
+}
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) {
+    delay(10);
+  }
+  delay(500);
+
+  Serial.println("=== Testing MS5611 ===");
+
+  pinMode(PIN_CS_BARO, OUTPUT);
+  digitalWrite(PIN_CS_BARO, HIGH);
+
+  SPI.begin();
+
+  // RESET
+  SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
+  digitalWrite(PIN_CS_BARO, LOW);
+  SPI.transfer(MS5611_CMD_RESET);
+  digitalWrite(PIN_CS_BARO, HIGH);
+  SPI.endTransaction();
+
+  delay(3);
+
+  Serial.println("Reading PROM:");
+  for (uint8_t i = 0; i < 7; i++) {
+    uint8_t addr = MS5611_PROM_READ_BASE + (i * 2);
+    uint16_t val = readPROM(addr);
+    Serial.printf("PROM[%d] = 0x%04X\n", i, val);
+  }
+}
+
+void loop() {}
+
+
+
+
+
+
