@@ -1,0 +1,78 @@
+#include <SPI.h>
+
+#define PIN_CS_MPU 9  // CS pin for MPU9250
+
+// MPU9250 registers
+#define MPU9250_WHO_AM_I      0x75
+#define MPU9250_PWR_MGMT_1    0x6B
+#define MPU9250_ACCEL_XOUT_H  0x3B
+#define MPU9250_GYRO_XOUT_H   0x43
+
+SPISettings mpuSPISettings(1000000, MSBFIRST, SPI_MODE0); // 1 MHz safe
+
+// SPI read/write helpers
+uint8_t mpuRead(uint8_t reg) {
+  SPI.beginTransaction(mpuSPISettings);
+  digitalWrite(PIN_CS_MPU, LOW);
+  SPI.transfer(reg | 0x80); // MSB=1 for read
+  uint8_t val = SPI.transfer(0x00);
+  digitalWrite(PIN_CS_MPU, HIGH);
+  SPI.endTransaction();
+  return val;
+}
+
+void mpuWrite(uint8_t reg, uint8_t val) {
+  SPI.beginTransaction(mpuSPISettings);
+  digitalWrite(PIN_CS_MPU, LOW);
+  SPI.transfer(reg & 0x7F); // MSB=0 for write
+  SPI.transfer(val);
+  digitalWrite(PIN_CS_MPU, HIGH);
+  SPI.endTransaction();
+}
+
+void mpuReadBytes(uint8_t reg, uint8_t* buffer, uint8_t length) {
+  SPI.beginTransaction(mpuSPISettings);
+  digitalWrite(PIN_CS_MPU, LOW);
+  SPI.transfer(reg | 0x80);
+  for (uint8_t i = 0; i < length; i++) {
+    buffer[i] = SPI.transfer(0x00);
+  }
+  digitalWrite(PIN_CS_MPU, HIGH);
+  SPI.endTransaction();
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PIN_CS_MPU, OUTPUT);
+  digitalWrite(PIN_CS_MPU, HIGH);
+  SPI.begin();
+
+  // Wake up MPU9250
+  mpuWrite(MPU9250_PWR_MGMT_1, 0x00);
+  delay(100);
+
+  // Check WHO_AM_I
+  uint8_t id = mpuRead(MPU9250_WHO_AM_I);
+  Serial.print("MPU9250 WHO_AM_I = 0x");
+  Serial.println(id, HEX);
+}
+
+void loop() {
+  uint8_t buf[14];
+  mpuReadBytes(MPU9250_ACCEL_XOUT_H, buf, 14);
+
+  int16_t ax = (buf[0] << 8) | buf[1];
+  int16_t ay = (buf[2] << 8) | buf[3];
+  int16_t az = (buf[4] << 8) | buf[5];
+
+  int16_t temp = (buf[6] << 8) | buf[7];
+
+  int16_t gx = (buf[8] << 8) | buf[9];
+  int16_t gy = (buf[10] << 8) | buf[11];
+  int16_t gz = (buf[12] << 8) | buf[13];
+
+  Serial.printf("Acc: %6d %6d %6d | Gyro: %6d %6d %6d | Temp: %6d\n",
+                ax, ay, az, gx, gy, gz, temp);
+
+  delay(200);
+}
